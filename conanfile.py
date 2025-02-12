@@ -7,7 +7,8 @@ class CalculatorAppRecipe(ConanFile):
 
     def requirements(self):
         self.requires("gtest/cci.20210126")
-        self.requires("fmt/11.0.2")
+        self.requires("fmt/8.1.1")
+        self.requires("protobuf/3.17.1")
 
     def build(self):
         cmake = CMake(self)
