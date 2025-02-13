@@ -1,26 +1,24 @@
 # Modern C++ Calculator Project
 
-A modern C++ calculator project demonstrating best practices in C++ development, including:
-- Modern C++ features (C++17)
-- CMake build system
-- Conan package management
-- Google Test framework
-- Exception handling
-- RAII principles
+A modern C++ calculator project demonstrating protocol buffers, service architecture, and comprehensive testing strategies.
 
 ## Project Structure
 
 ```
-modern-cpp-project/
+.
 ├── src/
 │   ├── include/
 │   │   └── calculator/
-│   │       └── calculator.hpp    # Calculator class declaration
+│   │       ├── calculator.hpp
+│   │       └── calculator_service.hpp
+│   │   └── calculator.hpp    # Calculator class declaration
 │   └── calculator.cpp            # Calculator implementation
 ├── tests/
-│   └── calculator_test.cpp       # Unit tests
-├── conanfile.py                  # Conan package requirements
-└── CMakeLists.txt               # CMake build configuration
+│   ├── calculator_test.cpp
+│   └── calculator_service_test.cpp
+├── examples/
+│   └── calculator_client.cpp
+└── CMakeLists.txt
 ```
 
 ## Prerequisites
@@ -54,17 +52,105 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 ```
 
-## Running Tests
+## Testing Strategy
 
-After building, you can run the tests using:
-```bash
-# Run tests with detailed output
-./calculator_test --gtest_color=yes
+The project includes comprehensive testing at multiple levels:
+
+### 1. Unit Tests (calculator_test.cpp)
+Tests the core calculator functionality:
+- Basic arithmetic operations
+- Error handling (e.g., division by zero)
+
+### 2. Service Tests (calculator_service_test.cpp)
+Tests the calculator service implementation with various scenarios:
+
+#### Basic Operation Tests
+```cpp
+TEST_F(CalculatorServiceTest, Addition) {
+    CalculationRequest request;
+    request.set_a(2.0);
+    request.set_b(3.0);
+    request.set_operation(CalculationRequest::ADD);
+
+    auto response = server_.Calculate(request);
+
+    EXPECT_TRUE(response.error().empty());
+    EXPECT_DOUBLE_EQ(response.result(), 5.0);
+}
 ```
 
-Or using CTest:
+#### Protocol Buffer Serialization Tests
+```cpp
+TEST_F(CalculatorServiceTest, SerializationDeserialization) {
+    CalculationRequest original_request;
+    original_request.set_a(10.5);
+    original_request.set_b(20.7);
+    original_request.set_operation(CalculationRequest::MULTIPLY);
+
+    std::string serialized;
+    ASSERT_TRUE(original_request.SerializeToString(&serialized));
+
+    CalculationRequest deserialized_request;
+    ASSERT_TRUE(deserialized_request.ParseFromString(serialized));
+    
+    EXPECT_DOUBLE_EQ(deserialized_request.a(), 10.5);
+}
+```
+
+#### End-to-End Tests
+Tests complete workflows including server startup/shutdown:
+```cpp
+TEST_F(CalculatorServiceTest, EnhancedEndToEndTest) {
+    server_.Start();
+
+    struct TestCase {
+        double a;
+        double b;
+        CalculationRequest::Operation op;
+        double expected_result;
+        bool should_succeed;
+        std::string expected_error;
+    };
+
+    std::vector<TestCase> test_cases = {
+        // Success cases
+        {10.0, 5.0, CalculationRequest::ADD, 15.0, true, ""},
+        // Error cases
+        {10.0, 0.0, CalculationRequest::DIVIDE, 0.0, false, "Division by zero is not allowed"}
+    };
+
+    for (const auto& tc : test_cases) {
+        // Process test cases...
+    }
+
+    server_.Stop();
+}
+```
+
+## Running the Examples
+
+### Calculator Client
 ```bash
-ctest --verbose
+# In build directory
+./calculator_client
+```
+
+Example output:
+```
+Calculator server started
+10.5 + 20.7 = Result: 31.2
+10.0 / 0.0 = Error: Division by zero is not allowed
+Calculator server stopped
+```
+
+### Running Tests
+```bash
+# Run all tests
+ctest --output-on-failure
+
+# Run specific test
+./calculator_test
+./calculator_service_test
 ```
 
 ## Features
