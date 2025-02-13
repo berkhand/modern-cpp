@@ -43,7 +43,7 @@ mkdir build && cd build
 
 3. Install dependencies using Conan:
 ```bash
-conan install .. --output-folder=. --build=missing
+./conan.sh conan install .. --output-folder=. --build=missing
 ```
 
 4. Configure and build:

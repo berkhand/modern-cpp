@@ -6,6 +6,18 @@ namespace testing {
 
 class CalculatorServiceTest : public ::testing::Test {
 protected:
+    void SetUp() override {
+        // Start server in SetUp
+        printf("Starting server\n");
+        server_.Start();
+    }
+
+    void TearDown() override {
+        // Ensure server is stopped in TearDown
+        printf("Stopping server\n");
+        server_.Stop();
+    }
+
     CalculatorServer server_;
 };
 
@@ -81,10 +93,8 @@ TEST_F(CalculatorServiceTest, SerializationDeserialization) {
 
 // End-to-end test
 TEST_F(CalculatorServiceTest, EndToEndTest) {
-    // Start server
-    server_.Start();
-
-    // Create and process multiple requests
+    // Server is already started in SetUp()
+    
     std::vector<std::pair<CalculationRequest, double>> test_cases = {
         {{[]() {
             CalculationRequest r;
@@ -107,15 +117,12 @@ TEST_F(CalculatorServiceTest, EndToEndTest) {
         EXPECT_TRUE(response.error().empty());
         EXPECT_DOUBLE_EQ(response.result(), expected);
     }
-
-    // Stop server
-    server_.Stop();
+    // Server will be stopped in TearDown()
 }
 
 TEST_F(CalculatorServiceTest, EnhancedEndToEndTest) {
-    server_.Start();
-
-    // Define test case structure
+    // Server is already started in SetUp()
+    
     struct TestCase {
         double a;
         double b;
@@ -125,7 +132,6 @@ TEST_F(CalculatorServiceTest, EnhancedEndToEndTest) {
         std::string expected_error;
     };
 
-    // Test cases including both success and failure scenarios
     std::vector<TestCase> test_cases = {
         // Success cases
         {10.0, 5.0, CalculationRequest::ADD, 15.0, true, ""},
@@ -138,7 +144,6 @@ TEST_F(CalculatorServiceTest, EnhancedEndToEndTest) {
         {1.0, 1.0, static_cast<CalculationRequest::Operation>(999), 0.0, false, "Unknown operation"}
     };
 
-    // Process all test cases
     for (const auto& tc : test_cases) {
         CalculationRequest request;
         request.set_a(tc.a);
@@ -159,8 +164,7 @@ TEST_F(CalculatorServiceTest, EnhancedEndToEndTest) {
                 << "Wrong error message";
         }
     }
-
-    server_.Stop();
+    // Server will be stopped in TearDown()
 }
 
 } // namespace testing

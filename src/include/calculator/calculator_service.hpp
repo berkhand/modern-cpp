@@ -6,6 +6,9 @@
 #include <thread>              // for std::thread
 #include <mutex>              // for std::mutex
 #include <condition_variable> // for std::condition_variable
+#include <chrono>  // Add this for timeout
+#include <queue>
+#include <future>
 
 namespace calculator {
 
@@ -23,16 +26,21 @@ public:
     CalculatorServer();
     void Start();
     void Stop();
-    CalculationResponse ProcessRequest(const CalculationRequest& request);
     CalculationResponse Calculate(const CalculationRequest& request);
 
 private:
     void ProcessRequests();
     
+    struct QueuedRequest {
+        CalculationRequest request;
+        std::promise<CalculationResponse> response_promise;
+    };
+
     CalculatorService service_;
     std::thread worker_thread_;
     std::mutex mutex_;
     std::condition_variable condition_;
+    std::queue<QueuedRequest> request_queue_;
     bool running_;
 };
 
