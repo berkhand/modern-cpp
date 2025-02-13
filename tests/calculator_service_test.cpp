@@ -165,8 +165,3 @@ TEST_F(CalculatorServiceTest, EnhancedEndToEndTest) {
 
 } // namespace testing
 } // namespace calculator
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-} 
