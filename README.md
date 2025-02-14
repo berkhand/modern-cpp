@@ -208,4 +208,84 @@ This project is being developed in multiple stages:
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Useful Conan Commands
+
+Here are some of the most useful Conan commands you may need while working on this project:
+
+1. **Install Dependencies**:
+   ```bash
+   conan install .. --output-folder=. --build=missing
+   ```
+   Installs the dependencies specified in the `conanfile.txt` or `conanfile.py`. The `--build=missing` flag builds any dependencies that are not available in the local cache.
+
+2. **Build the Project**:
+   ```bash
+   conan build ..
+   ```
+   Builds the project using the configuration specified in the `conanfile.py`.
+
+3. **Create a Package**:
+   ```bash
+   conan create . user/channel
+   ```
+   Creates a package from the current directory. Replace `user/channel` with your desired user and channel.
+
+4. **Upload a Package**:
+   ```bash
+   conan upload package_name/version@user/channel --all
+   ```
+   Uploads a package to a remote server. The `--all` flag uploads all package binaries.
+
+5. **Search for Packages**:
+   ```bash
+   conan search "*"
+   ```
+   Searches for all packages in the local cache or remote servers.
+
+6. **Show Profile Information**:
+   ```bash
+   conan profile show default
+   ```
+   Displays the details of the default profile, including settings and options.
+
+7. **List Profiles**:
+   ```bash
+   conan profile list
+   ```
+   Lists all available profiles in the local cache.
+
+8. **Display Package Information**:
+   ```bash
+   conan info ..
+   ```
+   Displays information about the current project and its dependencies.
+
+9. **List Remotes**:
+   ```bash
+   conan remote list
+   ```
+   Lists all configured remotes for Conan.
+
+10. **Remove Packages**:
+    ```bash
+    conan remove package_name/version@user/channel --force
+    ```
+    Removes a package from the local cache. The `--force` flag is used to bypass confirmation.
+
+11. **Clear Entire Cache**:
+    ```bash
+    conan remove "*" --force
+    ```
+    Clears the entire Conan cache by removing all packages. Use with caution, as this will delete all cached packages.
+
+12. **Update Dependencies**:
+    ```bash
+    conan install .. --update
+    ```
+    Updates the dependencies to the latest versions available in the remotes.
+
+### Summary
+
+This section provides a quick reference for common Conan commands that can help streamline your workflow while working on the project. 
