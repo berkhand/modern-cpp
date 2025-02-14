@@ -28,6 +28,22 @@ A modern C++ calculator project demonstrating protocol buffers, service architec
 - C++17 compatible compiler
 - Git
 
+## Setting Up the Environment
+
+To avoid mixing Conan configurations with other projects, it is recommended to set the `CONAN_HOME` environment variable to a specific directory for this project. You can do this by running the following command:
+
+```bash
+export CONAN_HOME=/home/deniz/Projects/modern-cpp-project/.conan
+```
+
+To ensure this variable is set every time you work on this project, you can create a `conan.sh` script with the above line and source it in your terminal session:
+
+```bash
+source ./conan.sh
+```
+
+**Note**: Remember to call `source ./conan.sh` at the start of each new terminal session before running any Conan commands.
+
 ## Building the Project
 
 1. Clone the repository:
@@ -43,10 +59,15 @@ mkdir build && cd build
 
 3. Install dependencies using Conan:
 ```bash
-./conan.sh conan install .. --output-folder=. --build=missing
+conan install .. --output-folder=. --build=missing
 ```
 
-4. Configure and build:
+4. Build the project using Conan:
+```bash
+conan build ..
+```
+
+5. Alternatively, configure and build using CMake:
 ```bash
 cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build .
