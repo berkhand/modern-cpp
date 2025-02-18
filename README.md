@@ -27,6 +27,7 @@ A modern C++ calculator project demonstrating protocol buffers, service architec
 - Conan package manager
 - C++17 compatible compiler
 - Git
+- Protocol Buffers compiler (`protoc`)
 
 ## Setting Up the Environment
 
@@ -59,12 +60,12 @@ mkdir build && cd build
 
 3. Install dependencies using Conan:
 ```bash
-conan install .. --output-folder=. --build=missing
+conan install -u . --install-folder=build -s build_type=Debug -pr linux_x86_64-clang6 --build=missing
 ```
 
 4. Build the project using Conan:
 ```bash
-conan build ..
+conan build --configure --build --build-folder=build .
 ```
 
 5. Alternatively, configure and build using CMake:
@@ -216,13 +217,14 @@ Here are some of the most useful Conan commands you may need while working on th
 
 1. **Install Dependencies**:
    ```bash
-   conan install .. --output-folder=. --build=missing
+   conan install -u . --install-folder=build -s build_type=Debug -pr linux_x86_64-clang6 --build=missing
+   conan install . --install-folder=build -s build_type=Debug -pr linux_x86_64-clang6 --build=missing
    ```
    Installs the dependencies specified in the `conanfile.txt` or `conanfile.py`. The `--build=missing` flag builds any dependencies that are not available in the local cache.
 
 2. **Build the Project**:
    ```bash
-   conan build ..
+   conan build --configure --build --build-folder=build .
    ```
    Builds the project using the configuration specified in the `conanfile.py`.
 
