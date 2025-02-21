@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
+#include <cstdio>  // for printf
 #include "calculator/calculator_service.hpp"
+#include "calculator.pb.h"  // Add this for protobuf generated types
 
 namespace calculator {
 namespace testing {
@@ -165,6 +167,42 @@ TEST_F(CalculatorServiceTest, EnhancedEndToEndTest) {
         }
     }
     // Server will be stopped in TearDown()
+}
+
+// Add this test after the other tests
+TEST_F(CalculatorServiceTest, AsyncCalculations) {
+    // Create multiple requests
+    std::vector<std::pair<CalculationRequest, std::future<CalculationResponse>>> async_requests;
+    
+    // Setup requests
+    for (int i = 0; i < 5; ++i) {
+        CalculationRequest request;
+        request.set_a(i);
+        request.set_b(2);
+        request.set_operation(CalculationRequest::MULTIPLY);
+        
+        // Create promise and future
+        std::promise<CalculationResponse> promise;
+        auto future = promise.get_future();
+        
+        // Store request and future
+        async_requests.emplace_back(request, std::move(future));
+        
+        // Launch async calculation
+        std::thread([this, req = request, promise = std::move(promise)]() mutable {
+            auto response = server_.Calculate(req);
+            promise.set_value(std::move(response));
+        }).detach();
+    }
+    
+    // Collect and verify results
+    for (size_t i = 0; i < async_requests.size(); ++i) {
+        auto response = async_requests[i].second.get();
+        EXPECT_TRUE(response.error().empty()) 
+            << "Error in async calculation " << i;
+        EXPECT_DOUBLE_EQ(response.result(), i * 2.0) 
+            << "Wrong result for async calculation " << i;
+    }
 }
 
 } // namespace testing
