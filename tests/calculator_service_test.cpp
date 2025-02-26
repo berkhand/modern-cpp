@@ -8,19 +8,22 @@ namespace testing {
 
 class CalculatorServiceTest : public ::testing::Test {
 protected:
+    // Constructor to initialize server_ first
+    CalculatorServiceTest() : server_() {
+        printf("Server created\n");
+    }
+
     void SetUp() override {
-        // Start server in SetUp
         printf("Starting server\n");
-        server_.Start();
+        server_.Start();  // Now safe to call Start()
     }
 
     void TearDown() override {
-        // Ensure server is stopped in TearDown
         printf("Stopping server\n");
         server_.Stop();
     }
 
-    CalculatorServer server_;
+    CalculatorServer server_;  // Member is constructed before SetUp() is called
 };
 
 // Basic operation tests
