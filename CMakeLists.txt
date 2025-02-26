@@ -6,6 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Add RPATH settings here
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
 # Enable testing
 enable_testing()
 
@@ -18,7 +22,7 @@ find_package(Protobuf CONFIG REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 
 # Create calculator library
-add_library(calculator
+add_library(calculator SHARED
     src/calculator.cpp
 )
 
@@ -140,4 +144,22 @@ target_include_directories(calculator_service_test
         ${Protobuf_INCLUDE_DIRS}
         ${CONAN_INCLUDE_DIRS_PROTOBUF}
         $<TARGET_PROPERTY:GTest::gtest,INTERFACE_INCLUDE_DIRECTORIES>
+)
+
+# Add example client
+add_executable(calculator_client
+    examples/calculator_client.cpp
+)
+
+target_link_libraries(calculator_client
+    PRIVATE
+        calculator_server_lib
+)
+
+target_include_directories(calculator_client
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+        ${CMAKE_CURRENT_BINARY_DIR}/generated
+        ${Protobuf_INCLUDE_DIRS}
+        ${CONAN_INCLUDE_DIRS_PROTOBUF}
 ) 

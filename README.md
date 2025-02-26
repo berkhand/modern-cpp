@@ -53,11 +53,6 @@ git clone <repository-url>
 cd modern-cpp-project
 ```
 
-2. Create build directory and navigate to it:
-```bash
-mkdir build && cd build
-```
-
 3. Install dependencies using Conan:
 ```bash
 conan install -u . --install-folder=build -s build_type=Debug -pr linux_x86_64-clang6 --build=missing
@@ -290,4 +285,54 @@ Here are some of the most useful Conan commands you may need while working on th
 
 ### Summary
 
-This section provides a quick reference for common Conan commands that can help streamline your workflow while working on the project. 
+This section provides a quick reference for common Conan commands that can help streamline your workflow while working on the project.
+
+## Using the Calculator Client
+
+The calculator client provides a simple way to test the calculator service. After building the project, you can run the client:
+
+```bash
+# From build directory
+./calculator_client
+```
+
+### Example Output
+```
+Calculator server started
+10.5 + 20.7 = Result: 31.2
+10.0 / 0.0 = Error: Division by zero is not allowed
+Calculator server stopped
+```
+
+### Custom Calculations
+You can modify examples/calculator_client.cpp to perform different calculations:
+
+```cpp
+// Create a request
+calculator::CalculationRequest request;
+request.set_a(10.5);    // First number
+request.set_b(20.7);    // Second number
+request.set_operation(calculator::CalculationRequest::ADD);  // Operation
+
+// Available operations:
+// - CalculationRequest::ADD
+// - CalculationRequest::SUBTRACT
+// - CalculationRequest::MULTIPLY
+// - CalculationRequest::DIVIDE
+
+// Calculate and get response
+auto response = server.Calculate(request);
+
+// Check result
+if (response.error().empty()) {
+    std::cout << "Result: " << response.result() << std::endl;
+} else {
+    std::cout << "Error: " << response.error() << std::endl;
+}
+```
+
+### Error Handling
+The client demonstrates error handling with division by zero:
+- Valid operations return a result
+- Invalid operations (like division by zero) return an error message
+- Unknown operations are properly handled with error messages 
