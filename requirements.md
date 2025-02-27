@@ -1,258 +1,486 @@
-# Calculator App - Staged Development Requirements
+# Navigation-like Calculator Service - Staged Development Requirements
 
-## Stage 1: Core C++ Library Setup & Implementation
+## Architecture Overview
+```mermaid
+graph TD
+    subgraph Android App
+        A[UI] --> B[Calculator Client]
+        B --> C[Protobuf Serialization]
+        C --> D[TCP Client]
+    end
 
-### 1.1 Project Structure Setup
+    subgraph Network
+        D <-->|TCP/IP| E[TCP Server]
+    end
+
+    subgraph Calculator Service
+        E --> F[Protobuf Deserialization]
+        F --> G[Calculator Logic]
+    end
+
+    %% Data flow example
+    H[Example Flow] -.->|1. Request: double a=5, b=3| C
+    C -.->|2. Serialized bytes: 0x0A...| D
+    D -.->|3. TCP packets| E
+    E -.->|4. Received bytes: 0x0A...| F
+    F -.->|5. Parsed: add(5,3)| G
+```
+
+### Message Flow
+1. Android creates CalculationRequest
+2. Protobuf serializes to bytes
+3. TCP sends bytes over network
+4. Service receives bytes
+5. Protobuf deserializes to request
+6. Calculator processes request
+7. Response follows same path back
+
+## Project Structure (Target)
 ```
 modern-cpp-project/
-├── src/
-│   ├── include/
-│   │   └── calculator/
-│   │       └── calculator.hpp
-│   └── calculator.cpp
-├── tests/
-│   └── calculator_test.cpp
-├── conanfile.py
-└── CMakeLists.txt
+├── src/                          # Core C++ code
+│   ├── calculator.cpp            # Calculator implementation
+│   ├── calculator_service.cpp    # Service implementation
+│   ├── calculator_server.cpp     # Server implementation
+│   ├── calculator_server_main.cpp # Server executable entry point
+│   ├── protos/                   # Protocol buffer definitions
+│   │   └── calculator.proto      # Service interface definition
+│   └── include/                  # Public headers
+│       └── calculator/
+│           ├── calculator.hpp    # Calculator class definition
+│           └── calculator_service.hpp # Service interface
+│
+├── examples/                     # Example clients
+│   └── calculator_client.cpp     # Example C++ client
+│
+├── android/                      # Android integration (future)
+│   ├── calculator-client/        # JNI wrapper library
+│   └── app/                      # Demo Android app
+│
+├── tests/                        # Test suite
+│   ├── calculator_test.cpp       # Calculator core tests
+│   └── calculator_service_test.cpp # Service tests
+│
+├── build/                        # Build artifacts
+├── CMakeLists.txt                # Main build configuration
+└── conanfile.py                  # Dependency management
 ```
 
-### 1.2 Core Library Requirements
-calculator.hpp:
-```cpp
-class Calculator {
-    // Basic operations with modern C++ features
-    double add(double a, double b);
-    double subtract(double a, double b);
-    double multiply(double a, double b);
-    double divide(double a, double b);
-};
-```
+## Current Implementation Status
 
-Key features:
-- Modern C++ (17/20) features
-- Exception handling
-- Input validation
-- RAII principles
+The project currently implements:
 
-### 1.3 Build System
+1. **Core Calculator Library**: 
+   - Basic arithmetic operations (add, subtract, multiply, divide)
+   - Edge case handling (division by zero)
+   - Modern C++ with custom exceptions
+
+2. **Protocol Buffer Interface**:
+   - `calculator.proto` with operation types
+   - Request/response message definitions
+   - Error handling via response message
+
+3. **Service Implementation**:
+   - CalculatorService implementation
+   - Request processing logic
+   - Protocol buffer integration
+
+4. **Server Architecture**:
+   - Multi-threaded server implementation
+   - Async calculation support
+   - Client request handling
+
+5. **Example Client**:
+   - Command-line calculator client
+   - Protocol buffer integration
+   - Service connectivity
+
+## CMake Structure
 ```cmake
-# CMake configuration
-- C++17 support
-- Conan package management
-- GTest integration
-- fmt library
+# Root CMakeLists.txt (Actual)
+cmake_minimum_required(VERSION 3.14)
+project(CalculatorService VERSION 0.1.0)
+
+# Dependencies managed with Conan
+include(${CMAKE_BINARY_DIR}/conan_toolchain.cmake)
+# ...
+
+# Protocol buffer generation
+find_package(Protobuf REQUIRED)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_SOURCE_DIR}/src/protos/calculator.proto)
+
+# Calculator library
+add_library(calculator SHARED
+    src/calculator.cpp
+    src/calculator_service.cpp
+    ${PROTO_SRCS}
+)
+
+# Server implementation
+add_library(calculator_server_lib STATIC
+    src/calculator_server.cpp
+)
+
+# Server executable
+add_executable(calculator_server
+    src/calculator_server_main.cpp
+)
+
+# Client example
+add_executable(calculator_client
+    examples/calculator_client.cpp
+    ${PROTO_SRCS}
+)
+
+# Tests
+add_executable(calculator_test
+    tests/calculator_test.cpp
+)
+
+add_executable(calculator_service_test
+    tests/calculator_service_test.cpp
+    ${PROTO_SRCS}
+)
 ```
 
-### 1.4 Test Criteria
-- Build successfully completes
-- All unit tests pass
-- No memory leaks
-- Error cases handled correctly
+## Future Development Roadmap
 
-## Stage 2: gRPC Service Integration
+### Phase 1: Core Service Completion and Optimization
+- [x] Basic calculator implementation
+- [x] Protocol buffer interface
+- [x] Minimal server implementation
+- [x] Example C++ client
+- [ ] Comprehensive error handling
+- [ ] Performance optimization
+- [ ] Service configuration options
 
-### 2.1 Add gRPC Structure
+### Phase 2: gRPC Integration
+- [ ] Migrate from raw TCP to gRPC
+- [ ] Update protocol definitions for streaming
+- [ ] Implement bidirectional streaming for continuous calculations
+- [ ] Add service discovery
+- [ ] Authentication and security
+
+### Phase 3: Advanced Service Features
+- [ ] Calculation history and caching
+- [ ] Persistent storage integration
+- [ ] Subscription model for calculation updates
+- [ ] Advanced math operations (trigonometry, etc.)
+- [ ] Status monitoring and health checks
+
+### Phase 4: Android Integration
+- [ ] JNI wrapper implementation
+- [ ] Native C++ library compilation for Android
+- [ ] Java client API for Android
+- [ ] Example Android application
+- [ ] Performance optimization for mobile
+- [ ] Battery usage optimization
+
+### Phase 5: Production Features
+- [ ] Logging and monitoring infrastructure
+- [ ] CI/CD pipeline configuration
+- [ ] Deployment automation
+- [ ] Documentation generation
+- [ ] Performance benchmarking suite
+
+## Android Integration Plan
+
+The Android integration will follow the same pattern as the navigation service:
+
+1. **JNI Library Creation**
+   - JNI wrapper around C++ calculator client
+   - Native Android library (.so)
+   - Java interface class
+
+2. **Android Client API**
+   - High-level Java API for calculator
+   - Async operation support
+   - Error handling
+   - Resource management
+
+3. **Example Android Application**
+   - Simple calculator UI
+   - Connection status indicator
+   - Real-time calculation
+   - Error display
+
+## Testing Strategy
+
+### Unit Testing
+- Core calculator functionality
+- Protocol buffer serialization/deserialization
+- Calculator service request handling
+
+### Integration Testing
+- Service-to-client communication
+- Error handling across boundaries
+- Performance under load
+
+### End-to-End Testing
+- Full system operation
+- Client-server communication
+- Android app integration
+
+## Build & Continuous Integration
+
+### Build Requirements
+- Conan for dependency management
+- CMake for build configuration
+- Protocol buffer compiler
+- GTest for testing
+- Android NDK for mobile builds
+
+### CI Pipeline
+- Build verification
+- Unit test execution
+- Integration test execution
+- Code coverage analysis
+- Static analysis
+- Documentation generation
+
+## Similarities to Navigation Service Architecture
+
+This calculator service project follows a similar architecture to the navigation service:
+
+1. **Core Library Approach**
+   - Shared library for core functionality
+   - Protocol buffer interface definition
+   - Clean separation of concerns
+
+2. **Server-Client Architecture**
+   - Standalone server process
+   - Client library for connectivity
+   - Protocol buffer communication
+
+3. **Android Integration Pattern**
+   - JNI wrapper for C++ functionality
+   - Java API for Android developers
+   - Native code (.so) packaging
+
+4. **Build System**
+   - CMake-based build configuration
+   - Conan for dependency management
+   - Cross-platform compatibility
+
+5. **Testing Strategy**
+   - Multi-level testing approach
+   - Unit tests for core functionality
+   - Integration tests for components
+   - End-to-end tests for full system
+
+The existing calculator implementation provides a solid foundation that follows the same architecture principles as the navigation service, making it an excellent reference implementation and learning tool.
+
+## Next Steps
+
+1. Complete the core service implementation
+2. Add comprehensive error handling
+3. Implement additional server configuration options
+4. Begin planning gRPC migration
+5. Design Android JNI library architecture
+6. Create initial Java API design
+
+## Component Relationships
+
+```mermaid
+graph TD
+    subgraph Existing Components
+        A[Calculator] --> B[CalculatorService]
+        B --> C[CalculatorServer]
+        D[Client Example] --> E[Protocol Buffers]
+        C --> E
+    end
+
+    subgraph Future Components
+        F[Android JNI]
+        G[Java API]
+        H[Android App]
+    end
+
+    C <-.->|Future gRPC| F
+    H --> G --> F
 ```
-modern-cpp-project/
-├── src/
-│   ├── protos/
-│   │   └── calculator.proto
-│   └── calculator_service.cpp
-└── tests/
-    └── calculator_service_test.cpp
-```
 
-### 2.2 Service Requirements
-calculator.proto:
-```protobuf
-service CalculatorService {
-    rpc Calculate(CalculatorRequest) returns (CalculatorResponse);
+## Implementation Details
+
+### Core Calculator
+
+The calculator implements basic arithmetic operations with proper error handling:
+
+```cpp
+// Core calculator implementation
+double Calculator::add(double a, double b) {
+    return a + b;
+}
+
+double Calculator::subtract(double a, double b) {
+    return a - b;
+}
+
+double Calculator::multiply(double a, double b) {
+    return a * b;
+}
+
+double Calculator::divide(double a, double b) {
+    if (b == 0.0) {
+        throw DivisionByZeroError();
+    }
+    return a / b;
 }
 ```
 
-Features:
-- Basic RPC operations
-- Error handling
-- Request/Response types
-- Service implementation
+### Protocol Buffer Interface
 
-### 2.3 Test Criteria
-- Service starts successfully
-- Can handle client requests
-- Error cases managed
-- Performance metrics acceptable
+The protocol buffer definition establishes the service interface:
 
-## Stage 3: Android Native Library
+```protobuf
+syntax = "proto3";
 
-### 3.1 Android Library Structure
-```
-modern-cpp-project/
-└── android/
-    └── calculator-lib/
-        ├── src/
-        │   └── main/
-        │       ├── cpp/
-        │       │   ├── calculator_jni.cpp
-        │       │   └── calculator_jni.h
-        │       └── java/
-        │           └── Calculator.java
-        ├── build.gradle
-        └── CMakeLists.txt
+package calculator;
+
+message CalculationRequest {
+  double a = 1;
+  double b = 2;
+  enum Operation {
+    ADD = 0;
+    SUBTRACT = 1;
+    MULTIPLY = 2;
+    DIVIDE = 3;
+  }
+  Operation operation = 3;
+}
+
+message CalculationResponse {
+  double result = 1;
+  string error = 2;  // Empty if no error
+}
 ```
 
-### 3.2 Library Requirements
-- JNI wrapper for C++ code
-- Java API for Android
-- Error handling
-- Resource management
+### Service Implementation
 
-### 3.3 Test Criteria
-- Library builds successfully
-- JNI calls work correctly
-- Memory management is proper
-- Java API is user-friendly
+The service layer connects the protocol buffer interface to the calculator core:
 
-## Stage 4: Android Application
-
-### 4.1 App Structure
-```
-modern-cpp-project/
-└── android/
-    └── app/
-        └── src/
-            └── main/
-                ├── java/
-                │   └── MainActivity.kt
-                └── res/
-                    └── layout/
-                        └── activity_main.xml
-```
-
-### 4.2 App Requirements
-- Material Design UI
-- gRPC client integration
-- Error state handling
-- Result display
-- Loading states
-
-### 4.3 Test Criteria
-- App runs without crashes
-- UI is responsive
-- Network errors handled
-- Good user experience
-
-## Testing Instructions for Each Stage
-
-### Stage 1 Testing:
-```bash
-# Build and test core library
-mkdir build && cd build
-conan install ..
-cmake ..
-make
-./calculator_test
+```cpp
+CalculationResponse CalculatorService::Calculate(const CalculationRequest& request) {
+    CalculationResponse response;
+    
+    try {
+        switch (request.operation()) {
+            case CalculationRequest::ADD:
+                response.set_result(calculator_.add(request.a(), request.b()));
+                break;
+            case CalculationRequest::SUBTRACT:
+                response.set_result(calculator_.subtract(request.a(), request.b()));
+                break;
+            case CalculationRequest::MULTIPLY:
+                response.set_result(calculator_.multiply(request.a(), request.b()));
+                break;
+            case CalculationRequest::DIVIDE:
+                response.set_result(calculator_.divide(request.a(), request.b()));
+                break;
+            default:
+                response.set_error("Unknown operation");
+                break;
+        }
+    } catch (const DivisionByZeroError& e) {
+        response.set_error(e.what());
+    } catch (const std::exception& e) {
+        response.set_error(std::string("Calculation error: ") + e.what());
+    }
+    
+    return response;
+}
 ```
 
-Expected results:
-- All tests pass
-- No memory leaks in valgrind
-- Clean build output
+## Android Integration Timeline
 
-### Stage 2 Testing:
-```bash
-# Test gRPC service
-./calculator_service &
-grpcurl -d '{"a": 5, "b": 3}' localhost:50051 calculator.Calculate
+| Phase | Milestone | Estimated Timeline |
+|-------|-----------|-------------------|
+| 1 | Initial JNI design and architecture | 2 weeks |
+| 2 | Basic JNI wrapper implementation | 3 weeks |
+| 3 | Java API development | 2 weeks |
+| 4 | Simple UI implementation | 2 weeks |
+| 5 | Testing and optimization | 3 weeks |
+| 6 | Documentation and deployment | 2 weeks |
+
+## Development Standards
+
+### C++ Standards
+- C++17 minimum
+- Strong type safety
+- RAII principles
+- Exception handling for errors
+- CMake for build system
+- Conan for dependencies
+- GTest for testing
+
+### Android Standards
+- Java/Kotlin for Android API layer
+- JNI for native code integration
+- Proper resource management
+- Lifecycle-aware components
+- Android best practices
+- Unit testing of all components
+
+### Documentation Requirements
+- API documentation
+- Architecture documentation
+- Build instructions
+- Test documentation
+- Example usage
+
+## Sample Usage Pattern
+
+```kotlin
+// Android client example using Java API
+val calculatorClient = CalculatorClient.Builder()
+    .setServerAddress("10.0.2.2")
+    .setServerPort(50051)
+    .setConnectionTimeout(5000)
+    .build()
+
+calculatorClient.connect { connected ->
+    if (connected) {
+        // Perform calculation
+        calculatorClient.calculate(5.0, 3.0, Operation.ADD) { result, error ->
+            if (error == null) {
+                // Update UI with result
+                runOnUiThread {
+                    resultTextView.text = "Result: $result"
+                }
+            } else {
+                // Handle error
+                runOnUiThread {
+                    resultTextView.text = "Error: $error"
+                }
+            }
+        }
+    } else {
+        // Handle connection failure
+        runOnUiThread {
+            statusTextView.text = "Connection failed"
+        }
+    }
+}
 ```
 
-Expected results:
-- Service responds correctly
-- Error cases handled gracefully
-- Performance within limits
+## Contribution Guidelines
 
-### Stage 3 Testing:
-```bash
-# Build Android library
-cd android/calculator-lib
-./gradlew build
-```
+1. Code must follow existing style and conventions
+2. All new code must have unit tests
+3. Documentation must be updated with changes
+4. CI pipeline must pass
+5. Code review required before merge
 
-Expected results:
-- Library builds successfully
-- Unit tests pass
-- No JNI errors
+## Conclusion
 
-### Stage 4 Testing:
-```bash
-# Run Android app
-cd android/app
-./gradlew installDebug
-```
+This calculator service project serves as both a functional reference implementation and a learning tool for understanding the architecture patterns used in the navigation service. By implementing a similar architecture with protocol buffers, service layer, and planned Android integration, it provides a foundation for understanding the larger, more complex navigation service codebase.
 
-Expected results:
-- App installs and runs
-- Can perform calculations
-- UI works smoothly
+The project demonstrates:
+- Modern C++ practices
+- Protocol buffer integration
+- Service-oriented architecture
+- Clean API design
+- Testing strategies
+- Cross-platform development
 
-## Development Flow for Each Stage
-
-### Stage 1:
-1. Set up project structure
-2. Implement calculator.hpp
-3. Implement calculator.cpp
-4. Write unit tests
-5. Set up build system
-6. Test and verify
-
-### Stage 2:
-1. Define proto file
-2. Implement service
-3. Add service tests
-4. Test with mock client
-5. Performance testing
-
-### Stage 3:
-1. Create JNI wrapper
-2. Implement Java API
-3. Set up Android build
-4. Test native bridge
-
-### Stage 4:
-1. Create UI layout
-2. Implement ViewModel
-3. Add gRPC client
-4. End-to-end testing
-
-## Success Criteria for Each Stage
-
-### Stage 1:
-- [ ] Builds without errors
-- [ ] All unit tests pass
-- [ ] Memory checks clean
-- [ ] Documentation complete
-
-### Stage 2:
-- [ ] Service runs stable
-- [ ] RPC calls work
-- [ ] Error handling works
-- [ ] Performance acceptable
-
-### Stage 3:
-- [ ] Library builds
-- [ ] JNI works correctly
-- [ ] Java API complete
-- [ ] Tests pass
-
-### Stage 4:
-- [ ] App runs smooth
-- [ ] UI responsive
-- [ ] Network handling works
-- [ ] Good user experience
-
-## Notes for Cursor
-- Implement one stage at a time
-- Follow modern C++ practices
-- Add detailed comments
-- Include error handling
-- Write comprehensive tests
-- Focus on code quality
+The roadmap outlines a clear path to evolve this from a simple calculator to a more sophisticated service with Android integration, following the same architectural principles as the navigation service.
