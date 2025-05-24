@@ -391,16 +391,122 @@ CalculationResponse CalculatorService::Calculate(const CalculationRequest& reque
 }
 ```
 
-## Android Integration Timeline
+## Android JNI Implementation Plan
 
-| Phase | Milestone | Estimated Timeline |
-|-------|-----------|-------------------|
-| 1 | Initial JNI design and architecture | 2 weeks |
-| 2 | Basic JNI wrapper implementation | 3 weeks |
-| 3 | Java API development | 2 weeks |
-| 4 | Simple UI implementation | 2 weeks |
-| 5 | Testing and optimization | 3 weeks |
-| 6 | Documentation and deployment | 2 weeks |
+### 1. JNI Wrapper Structure
+```
+calculator-android/
+├── calculator-lib/              # Native library module
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── cpp/
+│   │   │   │   ├── calculator_jni.cpp     # JNI implementations
+│   │   │   │   ├── calculator_jni.h       # JNI headers
+│   │   │   │   └── calculator_client.hpp  # C++ client wrapper
+│   │   │   │
+│   │   │   └── java/
+│   │   │       └── com/example/calculator/
+│   │   │           ├── Calculator.java     # Java API
+│   │   │           ├── CalculationResult.java  # Result wrapper
+│   │   │           └── CalculatorException.java # Custom exceptions
+│   │   │
+│   │   └── AndroidManifest.xml
+│   │
+│   ├── CMakeLists.txt          # Native build configuration
+│   └── build.gradle            # Android library configuration
+```
+
+### 2. JNI Interface Design
+```java
+// Calculator.java
+public class Calculator {
+    static {
+        System.loadLibrary("calculator_jni");
+    }
+
+    // Native methods
+    private native void nativeInit(String serverAddress, int port);
+    private native void nativeDestroy();
+    private native double nativeCalculate(double a, double b, int operation);
+    
+    // Java API
+    public void connect(String serverAddress, int port) {
+        nativeInit(serverAddress, port);
+    }
+    
+    public void disconnect() {
+        nativeDestroy();
+    }
+    
+    public double calculate(double a, double b, Operation op) 
+        throws CalculatorException {
+        return nativeCalculate(a, b, op.ordinal());
+    }
+}
+```
+
+### 3. C++ Implementation
+```cpp
+// calculator_jni.cpp
+extern "C" {
+
+JNIEXPORT void JNICALL
+Java_com_example_calculator_Calculator_nativeInit(
+    JNIEnv* env, jobject thiz, jstring server_address, jint port) {
+    // Initialize calculator client
+    // Connect to server
+}
+
+JNIEXPORT jdouble JNICALL
+Java_com_example_calculator_Calculator_nativeCalculate(
+    JNIEnv* env, jobject thiz, jdouble a, jdouble b, jint operation) {
+    // Convert and forward to C++ client
+    // Handle errors and exceptions
+}
+
+} // extern "C"
+```
+
+### 4. Error Handling
+- Convert C++ exceptions to Java exceptions
+- Proper resource cleanup
+- Connection state management
+- Memory management between Java/C++
+
+### 5. Resource Management
+- RAII in C++ layer
+- Proper JNI reference management
+- Automatic cleanup in Java finalizers
+- Connection lifecycle management
+
+### 6. Build Integration
+```cmake
+# CMakeLists.txt for Android
+add_library(calculator_jni SHARED
+    calculator_jni.cpp
+)
+
+target_link_libraries(calculator_jni
+    calculator_client    # Our client library
+    ${log-lib}          # Android logging
+)
+```
+
+### 7. Testing Strategy
+1. **Unit Tests**
+   - Java API tests
+   - JNI method tests
+   - Error handling tests
+
+2. **Integration Tests**
+   - Connection tests
+   - Calculation flow tests
+   - Resource cleanup tests
+
+3. **Memory Tests**
+   - Leak checks
+   - Reference counting
+   - Stress tests
 
 ## Development Standards
 
